@@ -96,8 +96,8 @@ export async function signOut() {
 // ============ 数据读写 ============
 
 // 要同步的字段（把 AI 相关的本地密钥排除在外）
-const SYNC_KEYS = ["progress", "sessions", "checkIns", "learnOrder", "streak", "lastDate"];
-const SYNC_SETTINGS = ["dailyCount"];
+const SYNC_KEYS = ["progress", "sessions", "checkIns", "learnOrder", "streak", "lastDate", "currentBook", "customBooks"];
+const SYNC_SETTINGS = ["dailyCount", "ttsEnabled", "ttsRate"];
 
 function extractSyncPayload(state) {
   const out = {};
@@ -158,10 +158,29 @@ function applyRemote(state, remote) {
     if (typeof remote.streak === "number") state.streak = remote.streak;
   }
 
-  // settings.dailyCount: 以远端为准（假设用户刚在另一台设备上调过）
-  if (remote.settings && typeof remote.settings.dailyCount === "number") {
+  // settings 同步部分
+  if (remote.settings) {
     state.settings = state.settings || {};
-    state.settings.dailyCount = remote.settings.dailyCount;
+    if (typeof remote.settings.dailyCount === "number") {
+      state.settings.dailyCount = remote.settings.dailyCount;
+    }
+    if (typeof remote.settings.ttsEnabled === "boolean") {
+      state.settings.ttsEnabled = remote.settings.ttsEnabled;
+    }
+    if (typeof remote.settings.ttsRate === "number") {
+      state.settings.ttsRate = remote.settings.ttsRate;
+    }
+  }
+
+  // currentBook: 以远端为准
+  if (remote.currentBook) state.currentBook = remote.currentBook;
+
+  // customBooks: 按 id 合并（远端为主，本地独有的追加）
+  if (Array.isArray(remote.customBooks)) {
+    const byId = new Map();
+    (state.customBooks || []).forEach(b => byId.set(b.id, b));
+    remote.customBooks.forEach(b => byId.set(b.id, b));
+    state.customBooks = Array.from(byId.values());
   }
 
   return state;
