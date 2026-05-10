@@ -407,3 +407,47 @@ main {
   .card { padding: 28px 18px; min-height: 320px; }
   .rate { min-width: 80px; padding: 10px 12px; }
 }
+
+
+/* ===== Cloud Sync ===== */
+.cloud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-mute);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.cloud-chip:hover { border-color: var(--accent); color: var(--text); }
+.cloud-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #555;
+}
+.cloud-chip.ok .cloud-dot { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.cloud-chip.syncing .cloud-dot { background: var(--warn); animation: pulse 1s infinite; }
+.cloud-chip.error .cloud-dot { background: var(--danger); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+hr.sep {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 26px 0 18px;
+}
+
+.auth-panel {
+  background: var(--bg-elev);
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
