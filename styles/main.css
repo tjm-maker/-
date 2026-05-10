@@ -451,3 +451,62 @@ hr.sep {
   border-radius: 10px;
   border: 1px solid var(--border);
 }
+
+
+/* ===== TTS ===== */
+.card-back { position: relative; }
+.tts-btn {
+  position: absolute;
+  top: -18px;
+  right: -4px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  color: var(--accent-2);
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+.tts-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+.tts-btn.speaking {
+  animation: ttsPulse 0.8s ease-in-out infinite;
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+@keyframes ttsPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(124, 108, 255, 0.6); }
+  50% { box-shadow: 0 0 0 8px rgba(124, 108, 255, 0); }
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 14px;
+}
+.switch-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}

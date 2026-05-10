@@ -45,6 +45,7 @@
             <p class="hint">点击卡片或按空格键显示释义</p>
           </div>
           <div class="card-back hidden" id="card-back">
+            <button class="tts-btn" id="back-tts" title="朗读单词" aria-label="朗读单词">🔊</button>
             <div class="word" id="back-word"></div>
             <div class="phonetic" id="back-phonetic"></div>
             <div class="pos" id="back-pos"></div>
@@ -114,6 +115,22 @@
           <label>每日学习单词数</label>
           <input type="number" id="set-daily" min="5" max="200" step="5" />
           <p class="hint">默认 50，范围 5 ~ 200</p>
+        </div>
+
+        <h3>🔊 朗读单词</h3>
+        <div class="field">
+          <label class="switch-row">
+            <input type="checkbox" id="set-tts-enabled" />
+            <span>查看释义后自动朗读单词</span>
+          </label>
+          <p class="hint" id="tts-support-tip">使用浏览器自带的语音合成，完全离线。</p>
+        </div>
+        <div class="field">
+          <label>朗读语速：<span id="set-tts-rate-val">0.9x</span></label>
+          <input type="range" id="set-tts-rate" min="0.5" max="1.5" step="0.05" />
+        </div>
+        <div class="actions" style="margin-top:6px;">
+          <button class="ghost" id="btn-tts-test">试听 "hello"</button>
         </div>
 
         <h3>AI 短文（C 方案）</h3>

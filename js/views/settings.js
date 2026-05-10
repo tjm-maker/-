@@ -1,6 +1,7 @@
 // 设置视图
 import { Storage } from "../core/storage.js";
 import { getProviderDefault } from "../core/story.js";
+import { speak, ttsSupported } from "../core/tts.js";
 import {
   loadCloudConfig, saveCloudConfig, clearCloudConfig,
   initCloud, signIn, signUp, signOut,
@@ -17,6 +18,27 @@ export function renderSettings() {
   $("set-base").value = settings.baseUrl || "";
   $("set-key").value = settings.apiKey || "";
   $("set-model").value = settings.model || "";
+
+  // TTS
+  const supported = ttsSupported();
+  const ttsChk = $("set-tts-enabled");
+  const ttsRate = $("set-tts-rate");
+  const ttsTestBtn = $("btn-tts-test");
+  const tip = $("tts-support-tip");
+  if (!supported) {
+    ttsChk.checked = false;
+    ttsChk.disabled = true;
+    ttsRate.disabled = true;
+    ttsTestBtn.disabled = true;
+    if (tip) {
+      tip.textContent = "当前浏览器不支持语音合成 API。请尝试 Chrome / Edge / Safari。";
+      tip.style.color = "var(--warn)";
+    }
+  } else {
+    ttsChk.checked = settings.ttsEnabled !== false;
+    ttsRate.value = settings.ttsRate ?? 0.9;
+    $("set-tts-rate-val").textContent = (ttsRate.value * 1).toFixed(2) + "x";
+  }
 
   // 云同步
   const cfg = loadCloudConfig();
@@ -63,11 +85,25 @@ export function bindSettings(onChanged) {
       s.settings.baseUrl = $("set-base").value.trim();
       s.settings.apiKey = $("set-key").value.trim();
       s.settings.model = $("set-model").value.trim();
+      s.settings.ttsEnabled = $("set-tts-enabled").checked;
+      s.settings.ttsRate = parseFloat($("set-tts-rate").value) || 0.9;
     });
     const tip = $("save-tip");
     tip.textContent = "✓ 已保存。如修改了每日单词数，新数量将在明天或「重置今日学习」后生效。";
     setTimeout(() => tip.textContent = "", 4000);
     onChanged && onChanged();
+  });
+
+  // TTS 语速滑块实时显示
+  $("set-tts-rate").addEventListener("input", () => {
+    const v = parseFloat($("set-tts-rate").value);
+    $("set-tts-rate-val").textContent = v.toFixed(2) + "x";
+  });
+
+  // TTS 试听按钮
+  $("btn-tts-test").addEventListener("click", () => {
+    const rate = parseFloat($("set-tts-rate").value) || 0.9;
+    speak("Hello, this is your word coach.", { respectSetting: false, rate });
   });
 
   $("btn-reset-today").addEventListener("click", () => {
