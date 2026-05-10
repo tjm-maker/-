@@ -3,8 +3,15 @@ import { Storage, todayStr, scheduleNext } from "../core/storage.js";
 import { WORDS } from "../data/words.js";
 import { schedulePush } from "../core/cloud.js";
 import { speak, stop as stopTTS } from "../core/tts.js";
+import { getCurrentBookWords } from "../core/session.js";
 
 function $(id) { return document.getElementById(id); }
+
+// 按单词查找详情：优先当前词书，兜底精华版
+function findWord(w) {
+  const cur = getCurrentBookWords();
+  return cur.find(x => x.w === w) || WORDS.find(x => x.w === w);
+}
 
 let queue = [];
 let cursor = 0;
@@ -15,7 +22,7 @@ function loadQueue() {
   const today = todayStr();
   queue = Object.values(state.progress)
     .filter(p => p.nextReview && p.nextReview <= today)
-    .map(p => ({ ...p, data: WORDS.find(w => w.w === p.w) }))
+    .map(p => ({ ...p, data: findWord(p.w) }))
     .filter(x => x.data);
   cursor = 0;
   revealed = false;

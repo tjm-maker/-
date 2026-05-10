@@ -3,14 +3,39 @@ import { Storage } from "../core/storage.js";
 import { getProviderDefault } from "../core/story.js";
 import { speak, ttsSupported } from "../core/tts.js";
 import {
+  listBooks, getCurrentBookId, setCurrentBook,
+  parseBookFile, saveCustomBook, deleteCustomBook,
+} from "../core/books.js";
+import {
   loadCloudConfig, saveCloudConfig, clearCloudConfig,
   initCloud, signIn, signUp, signOut,
   pullAndMerge, push, flushPush,
   isConfigured, isLoggedIn, getCurrentUser, onCloudChange,
+  isUsingCustomSupabase,
 } from "../core/cloud.js";
 
 function $(id) { return document.getElementById(id); }
 
+// ===== 自动保存公共工具 =====
+let saveTimer = null;
+function schedAutoSave(mutator, msg = "✓ 已自动保存") {
+  Storage.update(mutator);
+  flashTip("save-tip", msg);
+}
+
+function flashTip(id, msg, type = "ok") {
+  const el = $(id);
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = type === "error" ? "var(--danger)" : "var(--ok)";
+  clearTimeout(el._t);
+  el._t = setTimeout(() => {
+    if (id === "save-tip") el.textContent = "所有更改自动保存到本地浏览器。";
+    else el.textContent = "";
+  }, 2500);
+}
+
+// ===== 渲染 =====
 export function renderSettings() {
   const { settings } = Storage.get();
   $("set-daily").value = settings.dailyCount ?? 50;
@@ -40,19 +65,44 @@ export function renderSettings() {
     $("set-tts-rate-val").textContent = (ttsRate.value * 1).toFixed(2) + "x";
   }
 
-  // 云同步
+  // 词书
+  renderBookSelect();
+
+  // 云同步 — 高级区：仅当用户自定义时回填
   const cfg = loadCloudConfig();
-  $("cloud-url").value = cfg.url || "";
-  $("cloud-key").value = cfg.anonKey || "";
+  if (cfg.isCustom) {
+    $("cloud-url").value = cfg.url || "";
+    $("cloud-key").value = cfg.anonKey || "";
+  } else {
+    $("cloud-url").value = "";
+    $("cloud-key").value = "";
+  }
+  const srcTip = $("cloud-source-tip");
+  if (srcTip) {
+    srcTip.textContent = cfg.isCustom
+      ? `当前使用自定义 Supabase：${cfg.url}`
+      : "当前使用内置共享 Supabase（默认）";
+  }
   refreshAuthPanel();
+}
+
+function renderBookSelect() {
+  const sel = $("set-book");
+  if (!sel) return;
+  const books = listBooks();
+  const currentId = getCurrentBookId();
+  sel.innerHTML = books
+    .map(b => `<option value="${b.id}" ${b.id === currentId ? "selected" : ""}>${escapeHtml(b.name)}</option>`)
+    .join("");
+  const cur = books.find(b => b.id === currentId);
+  $("book-desc").textContent = cur?.desc || "";
+  $("btn-book-delete").disabled = !(cur && cur.kind === "custom");
 }
 
 function refreshAuthPanel() {
   const panel = $("auth-panel");
   if (!panel) return;
-  const configured = isConfigured();
-  panel.classList.toggle("hidden", !configured);
-  if (!configured) return;
+  panel.classList.remove("hidden"); // 默认已内置，永远可用
   const logged = isLoggedIn();
   $("auth-logged-out").classList.toggle("hidden", logged);
   $("auth-logged-in").classList.toggle("hidden", !logged);
@@ -62,50 +112,125 @@ function refreshAuthPanel() {
 }
 
 function setCloudTip(msg, type = "info") {
-  const tip = $("cloud-tip");
-  if (!tip) return;
-  tip.textContent = msg;
-  tip.style.color = type === "error" ? "var(--danger)" : "var(--ok)";
-  if (msg) setTimeout(() => { tip.textContent = ""; }, 5000);
+  flashTip("cloud-tip", msg, type === "error" ? "error" : "ok");
 }
 
-export function bindSettings(onChanged) {
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// ===== 绑定 =====
+export function bindSettings(onChanged, onBookChanged) {
+  // 每日数量 — 输入后立即保存（debounce 400ms）
+  $("set-daily").addEventListener("input", () => {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      const v = Math.max(5, Math.min(200, parseInt($("set-daily").value, 10) || 50));
+      schedAutoSave(s => { s.settings.dailyCount = v; });
+    }, 400);
+  });
+
+  // AI 服务商 — 切换时自动保存并回填默认值
   $("set-provider").addEventListener("change", () => {
     const prov = $("set-provider").value;
     const def = getProviderDefault(prov);
     if (def.baseUrl) $("set-base").value = def.baseUrl;
     if (def.model && !$("set-model").value) $("set-model").value = def.model;
-  });
-
-  $("btn-save").addEventListener("click", () => {
-    const daily = Math.max(5, Math.min(200, parseInt($("set-daily").value, 10) || 50));
-    Storage.update(s => {
-      s.settings.dailyCount = daily;
-      s.settings.provider = $("set-provider").value;
+    schedAutoSave(s => {
+      s.settings.provider = prov;
       s.settings.baseUrl = $("set-base").value.trim();
-      s.settings.apiKey = $("set-key").value.trim();
       s.settings.model = $("set-model").value.trim();
-      s.settings.ttsEnabled = $("set-tts-enabled").checked;
-      s.settings.ttsRate = parseFloat($("set-tts-rate").value) || 0.9;
     });
-    const tip = $("save-tip");
-    tip.textContent = "✓ 已保存。如修改了每日单词数，新数量将在明天或「重置今日学习」后生效。";
-    setTimeout(() => tip.textContent = "", 4000);
-    onChanged && onChanged();
   });
 
-  // TTS 语速滑块实时显示
+  // Base URL / Key / Model — blur 或输入 400ms 后保存
+  ["set-base", "set-key", "set-model"].forEach(id => {
+    $(id).addEventListener("input", () => {
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(() => {
+        schedAutoSave(s => {
+          s.settings.baseUrl = $("set-base").value.trim();
+          s.settings.apiKey = $("set-key").value.trim();
+          s.settings.model = $("set-model").value.trim();
+        });
+      }, 500);
+    });
+  });
+
+  // TTS 开关 — 切换即存
+  $("set-tts-enabled").addEventListener("change", () => {
+    schedAutoSave(s => { s.settings.ttsEnabled = $("set-tts-enabled").checked; });
+  });
+
+  // TTS 语速 — 拖动即存
   $("set-tts-rate").addEventListener("input", () => {
     const v = parseFloat($("set-tts-rate").value);
     $("set-tts-rate-val").textContent = v.toFixed(2) + "x";
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      schedAutoSave(s => { s.settings.ttsRate = v; });
+    }, 300);
   });
 
-  // TTS 试听按钮
   $("btn-tts-test").addEventListener("click", () => {
     const rate = parseFloat($("set-tts-rate").value) || 0.9;
     speak("Hello, this is your word coach.", { respectSetting: false, rate });
   });
 
+  // ===== 词书选择与导入 =====
+  $("set-book").addEventListener("change", async () => {
+    const id = $("set-book").value;
+    const old = getCurrentBookId();
+    if (id === old) return;
+    if (!confirm("切换词书会重置今天的学习列表（已评分的单词进度不受影响）。确定切换吗？")) {
+      $("set-book").value = old;
+      return;
+    }
+    setCurrentBook(id);
+    Storage.resetToday();
+    flashTip("book-tip", "正在加载新词书…");
+    try {
+      if (onBookChanged) await onBookChanged(id);
+      renderBookSelect();
+      flashTip("book-tip", "✓ 词书已切换，今日学习已重置。");
+    } catch (e) {
+      flashTip("book-tip", "切换失败：" + (e.message || e), "error");
+    }
+    onChanged && onChanged();
+  });
+
+  $("book-import").addEventListener("change", async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const book = parseBookFile(file.name, text);
+      saveCustomBook(book);
+      setCurrentBook(book.id);
+      Storage.resetToday();
+      flashTip("book-tip", `✓ 已导入「${book.name}」共 ${book.words.length} 词，并切换为当前词书。`);
+      if (onBookChanged) await onBookChanged(book.id);
+      renderBookSelect();
+      onChanged && onChanged();
+    } catch (err) {
+      flashTip("book-tip", "导入失败：" + (err.message || err), "error");
+    }
+    e.target.value = "";
+  });
+
+  $("btn-book-delete").addEventListener("click", () => {
+    const id = getCurrentBookId();
+    if (!id.startsWith("custom-")) return;
+    if (!confirm("确定删除当前自定义词书？删除后将切回「CET-6 精华版」。")) return;
+    deleteCustomBook(id);
+    Storage.resetToday();
+    flashTip("book-tip", "✓ 已删除。");
+    if (onBookChanged) onBookChanged("cet6-essentials");
+    renderBookSelect();
+    onChanged && onChanged();
+  });
+
+  // ===== 数据管理 =====
   $("btn-reset-today").addEventListener("click", () => {
     if (!confirm("确定要重置今天的学习进度吗？（已评分的单词不会消失，但今天的序列会重新抽取）")) return;
     Storage.resetToday();
@@ -120,7 +245,7 @@ export function bindSettings(onChanged) {
     location.reload();
   });
 
-  // ===== 云同步 =====
+  // ===== 云同步 - 高级：切换到自定义 Supabase =====
   $("btn-cloud-save").addEventListener("click", async () => {
     const url = $("cloud-url").value.trim();
     const anonKey = $("cloud-key").value.trim();
@@ -128,28 +253,46 @@ export function bindSettings(onChanged) {
       setCloudTip("请同时填写 URL 和 anon key。", "error");
       return;
     }
+    if (!confirm("切换到自定义 Supabase 会让当前登录失效，需要在新项目中重新注册/登录。确定？")) return;
+    await signOut().catch(() => {});
     saveCloudConfig({ url, anonKey });
-    setCloudTip("正在连接 Supabase…");
+    setCloudTip("正在连接新的 Supabase…");
     const r = await initCloud();
-    if (r.ok) {
-      setCloudTip("✓ 已连接，现在可以注册或登录。");
-    } else {
-      setCloudTip("连接失败：" + (r.reason || "未知错误"), "error");
-    }
+    if (r.ok) setCloudTip("✓ 已切换到自定义 Supabase，请登录或注册。");
+    else setCloudTip("连接失败：" + (r.reason || "未知错误"), "error");
     refreshAuthPanel();
+    renderSettings();
     onChanged && onChanged();
   });
 
+  // 恢复默认（清除用户自定义）
   $("btn-cloud-clear").addEventListener("click", async () => {
-    if (!confirm("确定清除云同步配置吗？本地数据不会被删除。")) return;
+    if (!isUsingCustomSupabase()) {
+      setCloudTip("当前已经是默认配置。");
+      return;
+    }
+    if (!confirm("确定恢复默认的内置 Supabase？当前登录会失效。")) return;
     await signOut().catch(() => {});
     clearCloudConfig();
     $("cloud-url").value = "";
     $("cloud-key").value = "";
+    setCloudTip("正在连接默认 Supabase…");
+    const r = await initCloud();
+    if (r.ok) setCloudTip("✓ 已恢复默认，请登录或注册。");
+    else setCloudTip("连接失败：" + (r.reason || "未知错误"), "error");
     refreshAuthPanel();
-    setCloudTip("已清除云同步配置。");
+    renderSettings();
     onChanged && onChanged();
   });
+
+  async function ensureClient() {
+    try {
+      const r = await initCloud();
+      return r.ok;
+    } catch (e) {
+      return false;
+    }
+  }
 
   $("btn-sign-in").addEventListener("click", async () => {
     const email = $("auth-email").value.trim();
@@ -157,10 +300,11 @@ export function bindSettings(onChanged) {
     if (!email || !pwd) { setCloudTip("请输入邮箱和密码。", "error"); return; }
     setCloudTip("登录中…");
     try {
+      await ensureClient();
       await signIn(email, pwd);
       setCloudTip("✓ 登录成功，正在合并云端数据…");
       await pullAndMerge();
-      await push(); // 首次登录立即把本地合并结果推上去
+      await push();
       setCloudTip("✓ 数据已同步。");
       refreshAuthPanel();
       onChanged && onChanged();
@@ -176,13 +320,14 @@ export function bindSettings(onChanged) {
     if (pwd.length < 6) { setCloudTip("密码至少 6 位。", "error"); return; }
     setCloudTip("注册中…");
     try {
+      await ensureClient();
       const data = await signUp(email, pwd);
       if (data?.session) {
         setCloudTip("✓ 注册成功并自动登录，正在同步…");
         await pullAndMerge();
         await push();
       } else {
-        setCloudTip("注册邮件已发送，请前往邮箱确认后再登录（若项目开启了邮箱验证）。");
+        setCloudTip("注册邮件已发送，请前往邮箱确认后再登录。");
       }
       refreshAuthPanel();
       onChanged && onChanged();
@@ -212,6 +357,5 @@ export function bindSettings(onChanged) {
     onChanged && onChanged();
   });
 
-  // 登录状态变更时刷新
   onCloudChange(() => refreshAuthPanel());
 }
