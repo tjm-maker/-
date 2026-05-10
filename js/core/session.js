@@ -1,6 +1,7 @@
 // 今日学习会话管理
 import { Storage, todayStr } from "./storage.js";
 import { WORDS } from "../data/words.js";
+import { schedulePush } from "./cloud.js";
 
 // 从词库中挑选今日单词（优先没学过的；不足则从 box 低的里补）
 function pickTodayWords(count) {
@@ -52,7 +53,7 @@ export function getTodaySession() {
 
 export function rateCurrent(rate) {
   const today = todayStr();
-  return Storage.update(s => {
+  const result = Storage.update(s => {
     const sess = s.sessions[today];
     if (!sess) return;
     const word = sess.pool[sess.idx];
@@ -72,6 +73,8 @@ export function rateCurrent(rate) {
       s.lastDate = today;
     }
   }).sessions[today];
+  schedulePush();
+  return result;
 }
 
 function applySchedule(item, rate) {

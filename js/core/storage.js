@@ -8,6 +8,9 @@ const defaultState = () => ({
     baseUrl: "https://api.openai.com/v1",
     apiKey: "",
     model: "gpt-4o-mini",
+    // 朗读设置
+    ttsEnabled: true,
+    ttsRate: 0.9,
   },
   // 每个单词: { w, rate:0/1/2, firstSeen, lastSeen, nextReview, box(0-5) }
   progress: {},

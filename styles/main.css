@@ -407,3 +407,106 @@ main {
   .card { padding: 28px 18px; min-height: 320px; }
   .rate { min-width: 80px; padding: 10px 12px; }
 }
+
+
+/* ===== Cloud Sync ===== */
+.cloud-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-mute);
+  cursor: pointer;
+  font-size: 12px;
+  transition: all 0.15s;
+}
+.cloud-chip:hover { border-color: var(--accent); color: var(--text); }
+.cloud-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #555;
+}
+.cloud-chip.ok .cloud-dot { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+.cloud-chip.syncing .cloud-dot { background: var(--warn); animation: pulse 1s infinite; }
+.cloud-chip.error .cloud-dot { background: var(--danger); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+hr.sep {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 26px 0 18px;
+}
+
+.auth-panel {
+  background: var(--bg-elev);
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+
+/* ===== TTS ===== */
+.card-back { position: relative; }
+.tts-btn {
+  position: absolute;
+  top: -18px;
+  right: -4px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  color: var(--accent-2);
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+.tts-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  transform: scale(1.05);
+}
+.tts-btn.speaking {
+  animation: ttsPulse 0.8s ease-in-out infinite;
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+@keyframes ttsPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(124, 108, 255, 0.6); }
+  50% { box-shadow: 0 0 0 8px rgba(124, 108, 255, 0); }
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 14px;
+}
+.switch-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}

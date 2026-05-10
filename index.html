@@ -22,6 +22,10 @@
       <button class="tab" data-view="stats">统计</button>
       <button class="tab" data-view="settings">设置</button>
     </nav>
+    <div class="cloud-chip" id="cloud-chip" title="点击前往设置">
+      <span class="cloud-dot" id="cloud-dot"></span>
+      <span id="cloud-chip-text">未同步</span>
+    </div>
   </header>
 
   <main id="app">
@@ -41,6 +45,7 @@
             <p class="hint">点击卡片或按空格键显示释义</p>
           </div>
           <div class="card-back hidden" id="card-back">
+            <button class="tts-btn" id="back-tts" title="朗读单词" aria-label="朗读单词">🔊</button>
             <div class="word" id="back-word"></div>
             <div class="phonetic" id="back-phonetic"></div>
             <div class="pos" id="back-pos"></div>
@@ -112,6 +117,22 @@
           <p class="hint">默认 50，范围 5 ~ 200</p>
         </div>
 
+        <h3>🔊 朗读单词</h3>
+        <div class="field">
+          <label class="switch-row">
+            <input type="checkbox" id="set-tts-enabled" />
+            <span>查看释义后自动朗读单词</span>
+          </label>
+          <p class="hint" id="tts-support-tip">使用浏览器自带的语音合成，完全离线。</p>
+        </div>
+        <div class="field">
+          <label>朗读语速：<span id="set-tts-rate-val">0.9x</span></label>
+          <input type="range" id="set-tts-rate" min="0.5" max="1.5" step="0.05" />
+        </div>
+        <div class="actions" style="margin-top:6px;">
+          <button class="ghost" id="btn-tts-test">试听 "hello"</button>
+        </div>
+
         <h3>AI 短文（C 方案）</h3>
         <div class="field">
           <label>API 服务商</label>
@@ -143,6 +164,50 @@
         </div>
 
         <p class="save-tip" id="save-tip"></p>
+
+        <hr class="sep" />
+        <h3>☁️ 云同步（Supabase）</h3>
+        <p class="muted" style="margin-top:-6px;">登录后，所有设备共享同一份学习数据。未配置时完全离线可用。</p>
+
+        <div class="field">
+          <label>Supabase URL</label>
+          <input type="text" id="cloud-url" placeholder="https://xxxxx.supabase.co" />
+        </div>
+        <div class="field">
+          <label>Supabase anon key</label>
+          <input type="password" id="cloud-key" placeholder="eyJhbGciOi..." />
+          <p class="hint">URL 和 anon key 在 Supabase 项目 → Project Settings → API 里找。</p>
+        </div>
+        <div class="actions">
+          <button class="primary" id="btn-cloud-save">保存连接</button>
+          <button class="ghost" id="btn-cloud-clear">清除连接</button>
+        </div>
+
+        <div id="auth-panel" class="auth-panel hidden" style="margin-top:18px;">
+          <div id="auth-logged-out">
+            <div class="field">
+              <label>邮箱</label>
+              <input type="email" id="auth-email" placeholder="you@example.com" />
+            </div>
+            <div class="field">
+              <label>密码（至少 6 位）</label>
+              <input type="password" id="auth-pwd" placeholder="••••••" />
+            </div>
+            <div class="actions">
+              <button class="primary" id="btn-sign-in">登录</button>
+              <button class="ghost" id="btn-sign-up">注册</button>
+            </div>
+          </div>
+          <div id="auth-logged-in" class="hidden">
+            <p>已登录：<strong id="auth-email-display"></strong></p>
+            <div class="actions">
+              <button class="primary" id="btn-sync-now">立即同步</button>
+              <button class="ghost" id="btn-sign-out">登出</button>
+            </div>
+          </div>
+        </div>
+
+        <p class="save-tip" id="cloud-tip"></p>
       </div>
     </section>
   </main>

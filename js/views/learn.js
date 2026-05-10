@@ -1,9 +1,15 @@
 // 今日学习视图
 import { getTodaySession, rateCurrent } from "../core/session.js";
+import { speak, stop as stopTTS } from "../core/tts.js";
 
 let revealed = false;
 
 function $(id) { return document.getElementById(id); }
+
+function currentWord() {
+  const sess = getTodaySession();
+  return sess.pool[sess.idx];
+}
 
 export function renderLearn() {
   const sess = getTodaySession();
@@ -34,6 +40,7 @@ export function renderLearn() {
   const word = pool[idx];
   // 先英文
   revealed = false;
+  stopTTS();
   front.classList.remove("hidden");
   back.classList.add("hidden");
 
@@ -54,6 +61,9 @@ function reveal() {
   revealed = true;
   $("card-front").classList.add("hidden");
   $("card-back").classList.remove("hidden");
+  // 翻面后自动朗读（遵循全局开关）
+  const word = currentWord();
+  if (word) speak(word.w);
 }
 
 function onRate(rate) {
@@ -62,6 +72,7 @@ function onRate(rate) {
     reveal();
     return;
   }
+  stopTTS();
   rateCurrent(rate);
   renderLearn();
   // 触发外部回调（更新顶栏、统计）
@@ -70,11 +81,18 @@ function onRate(rate) {
 
 export function bindLearn(onDone) {
   $("card").addEventListener("click", (e) => {
-    // 避免点 rate/reveal 按钮时触发翻面
-    if (e.target.closest(".rate") || e.target.closest(".reveal-btn")) return;
+    // 避免点 rate/reveal/tts 按钮时触发翻面
+    if (e.target.closest(".rate") || e.target.closest(".reveal-btn") || e.target.closest(".tts-btn")) return;
     reveal();
   });
   $("reveal-btn").addEventListener("click", reveal);
+
+  // 手动朗读按钮（忽略全局开关，强制朗读）
+  $("back-tts").addEventListener("click", (e) => {
+    e.stopPropagation();
+    const word = currentWord();
+    if (word) speak(word.w, { respectSetting: false });
+  });
 
   document.querySelectorAll(".rate").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -95,6 +113,10 @@ export function bindLearn(onDone) {
     } else if (["1", "2", "3"].includes(e.key)) {
       // 1=不认识 2=模糊 3=认识
       onRate(parseInt(e.key, 10) - 1);
+    } else if (e.key.toLowerCase() === "p") {
+      // P 键再读一次
+      const word = currentWord();
+      if (revealed && word) speak(word.w, { respectSetting: false });
     }
   });
 }

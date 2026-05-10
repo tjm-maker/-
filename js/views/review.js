@@ -1,6 +1,8 @@
 // 复习视图：到期单词逐个过卡
 import { Storage, todayStr, scheduleNext } from "../core/storage.js";
 import { WORDS } from "../data/words.js";
+import { schedulePush } from "../core/cloud.js";
+import { speak, stop as stopTTS } from "../core/tts.js";
 
 function $(id) { return document.getElementById(id); }
 
@@ -47,6 +49,7 @@ function render() {
         <p class="hint">空格 / 点击卡片显示释义</p>
       </div>
       <div id="rv-back" class="card-back ${revealed ? "" : "hidden"}">
+        <button class="tts-btn" id="rv-tts" title="朗读单词" aria-label="朗读单词">🔊</button>
         <div class="word">${d.w}</div>
         <div class="phonetic">${d.p || ""}</div>
         <div class="pos">${d.t || ""}</div>
@@ -67,13 +70,18 @@ function render() {
     revealed = true;
     $("rv-front").classList.add("hidden");
     $("rv-back").classList.remove("hidden");
+    speak(d.w);
   };
 
   $("rv-card").addEventListener("click", (e) => {
-    if (e.target.closest(".rate") || e.target.closest(".reveal-btn")) return;
+    if (e.target.closest(".rate") || e.target.closest(".reveal-btn") || e.target.closest(".tts-btn")) return;
     reveal();
   });
   $("rv-reveal").addEventListener("click", reveal);
+  $("rv-tts").addEventListener("click", (e) => {
+    e.stopPropagation();
+    speak(d.w, { respectSetting: false });
+  });
 
   host.querySelectorAll(".rate").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -85,7 +93,9 @@ function render() {
       });
       cursor += 1;
       revealed = false;
+      stopTTS();
       render();
+      schedulePush();
       window.dispatchEvent(new CustomEvent("cet6:progress"));
     });
   });
