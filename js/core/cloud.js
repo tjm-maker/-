@@ -4,13 +4,19 @@ import { Storage } from "./storage.js";
 
 const CONFIG_KEY = "cet6_cloud_config_v1";
 
+// ===== 默认内置的共享 Supabase 项目 =====
+// anon key 是设计上就可公开的密钥，配合 Row Level Security 保证每个用户只能访问自己的数据。
+// 用户无需自建 Supabase 项目，打开即可注册/登录使用。
+const DEFAULT_URL = "https://sxubgsklkyvxdxdbnbvy.supabase.co";
+const DEFAULT_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN4dWJnc2tsa3l2eGR4ZGJuYnZ5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgzOTQ3NzIsImV4cCI6MjA5Mzk3MDc3Mn0.8CYO4GUgeaQwjYjNOlkx3HdXRiY3YVQVkxV3xY7zEVg";
+
 let client = null;
 let currentUser = null;
 let debounceTimer = null;
 let listeners = new Set();
 
-// 内部：保存/读取 Supabase 连接配置（单独存，便于跨浏览器也能各自填）
-export function loadCloudConfig() {
+// 读取用户的自定义配置（如果有）
+function loadUserConfig() {
   try {
     return JSON.parse(localStorage.getItem(CONFIG_KEY) || "{}");
   } catch {
@@ -18,12 +24,27 @@ export function loadCloudConfig() {
   }
 }
 
+// 对外：返回当前实际使用的 Supabase 连接（优先用户自定义，否则用默认）
+export function loadCloudConfig() {
+  const user = loadUserConfig();
+  if (user.url && user.anonKey) return { ...user, isCustom: true };
+  return { url: DEFAULT_URL, anonKey: DEFAULT_ANON_KEY, isCustom: false };
+}
+
+// 写入用户自定义配置（仅在用户手动填自己的 Supabase 时调用）
 export function saveCloudConfig(cfg) {
   localStorage.setItem(CONFIG_KEY, JSON.stringify(cfg));
 }
 
+// 清除用户自定义配置 → 回退到默认内置
 export function clearCloudConfig() {
   localStorage.removeItem(CONFIG_KEY);
+}
+
+// 判断当前是否使用了用户自定义 Supabase
+export function isUsingCustomSupabase() {
+  const user = loadUserConfig();
+  return !!(user.url && user.anonKey);
 }
 
 export function getCurrentUser() {
@@ -235,8 +256,8 @@ export async function flushPush() {
 }
 
 export function isConfigured() {
-  const cfg = loadCloudConfig();
-  return !!(cfg.url && cfg.anonKey);
+  // 默认内置了 Supabase，永远为 true
+  return true;
 }
 
 export function isLoggedIn() {

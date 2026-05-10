@@ -189,32 +189,18 @@
         <p class="save-tip" id="save-tip">所有更改自动保存到本地浏览器。</p>
 
         <hr class="sep" />
-        <h3>☁️ 云同步（Supabase）</h3>
-        <p class="muted" style="margin-top:-6px;">登录后，所有设备共享同一份学习数据。未配置时完全离线可用。</p>
+        <h3>☁️ 云同步</h3>
+        <p class="muted" style="margin-top:-6px;">注册或登录你的账号，学习数据会在所有设备间自动同步。</p>
 
-        <div class="field">
-          <label>Supabase URL</label>
-          <input type="text" id="cloud-url" placeholder="https://xxxxx.supabase.co" />
-        </div>
-        <div class="field">
-          <label>Supabase anon key</label>
-          <input type="password" id="cloud-key" placeholder="eyJhbGciOi..." />
-          <p class="hint">URL 和 anon key 在 Supabase 项目 → Project Settings → API 里找。</p>
-        </div>
-        <div class="actions">
-          <button class="primary" id="btn-cloud-save">保存连接</button>
-          <button class="ghost" id="btn-cloud-clear">清除连接</button>
-        </div>
-
-        <div id="auth-panel" class="auth-panel hidden" style="margin-top:18px;">
+        <div id="auth-panel" class="auth-panel" style="margin-top:12px;">
           <div id="auth-logged-out">
             <div class="field">
               <label>邮箱</label>
-              <input type="email" id="auth-email" placeholder="you@example.com" />
+              <input type="email" id="auth-email" placeholder="you@example.com" autocomplete="email" />
             </div>
             <div class="field">
               <label>密码（至少 6 位）</label>
-              <input type="password" id="auth-pwd" placeholder="••••••" />
+              <input type="password" id="auth-pwd" placeholder="••••••" autocomplete="current-password" />
             </div>
             <div class="actions">
               <button class="primary" id="btn-sign-in">登录</button>
@@ -231,6 +217,26 @@
         </div>
 
         <p class="save-tip" id="cloud-tip"></p>
+
+        <details style="margin-top:18px;">
+          <summary class="muted" style="cursor:pointer;font-size:13px;">高级：使用自己的 Supabase 项目 ▾</summary>
+          <div style="margin-top:10px;">
+            <p class="muted" style="font-size:13px;">默认已内置共享的 Supabase 服务端，一般不需要修改。如果你想用自己的项目（数据完全独立），可在下方填写。</p>
+            <div class="field">
+              <label>Supabase URL</label>
+              <input type="text" id="cloud-url" placeholder="https://xxxxx.supabase.co" />
+            </div>
+            <div class="field">
+              <label>Supabase anon key</label>
+              <input type="password" id="cloud-key" placeholder="eyJhbGciOi..." />
+            </div>
+            <div class="actions">
+              <button class="primary" id="btn-cloud-save">保存并切换</button>
+              <button class="ghost" id="btn-cloud-clear">恢复默认</button>
+            </div>
+            <p class="hint" id="cloud-source-tip" style="margin-top:6px;"></p>
+          </div>
+        </details>
       </div>
     </section>
   </main>
