@@ -11,6 +11,7 @@ import {
   initCloud, signIn, signUp, signOut,
   pullAndMerge, push, flushPush,
   isConfigured, isLoggedIn, getCurrentUser, onCloudChange,
+  isUsingCustomSupabase,
 } from "../core/cloud.js";
 
 function $(id) { return document.getElementById(id); }
@@ -67,10 +68,21 @@ export function renderSettings() {
   // 词书
   renderBookSelect();
 
-  // 云同步
+  // 云同步 — 高级区：仅当用户自定义时回填
   const cfg = loadCloudConfig();
-  $("cloud-url").value = cfg.url || "";
-  $("cloud-key").value = cfg.anonKey || "";
+  if (cfg.isCustom) {
+    $("cloud-url").value = cfg.url || "";
+    $("cloud-key").value = cfg.anonKey || "";
+  } else {
+    $("cloud-url").value = "";
+    $("cloud-key").value = "";
+  }
+  const srcTip = $("cloud-source-tip");
+  if (srcTip) {
+    srcTip.textContent = cfg.isCustom
+      ? `当前使用自定义 Supabase：${cfg.url}`
+      : "当前使用内置共享 Supabase（默认）";
+  }
   refreshAuthPanel();
 }
 
@@ -90,9 +102,7 @@ function renderBookSelect() {
 function refreshAuthPanel() {
   const panel = $("auth-panel");
   if (!panel) return;
-  const configured = isConfigured();
-  panel.classList.toggle("hidden", !configured);
-  if (!configured) return;
+  panel.classList.remove("hidden"); // 默认已内置，永远可用
   const logged = isLoggedIn();
   $("auth-logged-out").classList.toggle("hidden", logged);
   $("auth-logged-in").classList.toggle("hidden", !logged);
@@ -235,7 +245,7 @@ export function bindSettings(onChanged, onBookChanged) {
     location.reload();
   });
 
-  // ===== 云同步 =====
+  // ===== 云同步 - 高级：切换到自定义 Supabase =====
   $("btn-cloud-save").addEventListener("click", async () => {
     const url = $("cloud-url").value.trim();
     const anonKey = $("cloud-key").value.trim();
@@ -243,25 +253,46 @@ export function bindSettings(onChanged, onBookChanged) {
       setCloudTip("请同时填写 URL 和 anon key。", "error");
       return;
     }
+    if (!confirm("切换到自定义 Supabase 会让当前登录失效，需要在新项目中重新注册/登录。确定？")) return;
+    await signOut().catch(() => {});
     saveCloudConfig({ url, anonKey });
-    setCloudTip("正在连接 Supabase…");
+    setCloudTip("正在连接新的 Supabase…");
     const r = await initCloud();
-    if (r.ok) setCloudTip("✓ 已连接，现在可以注册或登录。");
+    if (r.ok) setCloudTip("✓ 已切换到自定义 Supabase，请登录或注册。");
     else setCloudTip("连接失败：" + (r.reason || "未知错误"), "error");
     refreshAuthPanel();
+    renderSettings();
     onChanged && onChanged();
   });
 
+  // 恢复默认（清除用户自定义）
   $("btn-cloud-clear").addEventListener("click", async () => {
-    if (!confirm("确定清除云同步配置吗？本地数据不会被删除。")) return;
+    if (!isUsingCustomSupabase()) {
+      setCloudTip("当前已经是默认配置。");
+      return;
+    }
+    if (!confirm("确定恢复默认的内置 Supabase？当前登录会失效。")) return;
     await signOut().catch(() => {});
     clearCloudConfig();
     $("cloud-url").value = "";
     $("cloud-key").value = "";
+    setCloudTip("正在连接默认 Supabase…");
+    const r = await initCloud();
+    if (r.ok) setCloudTip("✓ 已恢复默认，请登录或注册。");
+    else setCloudTip("连接失败：" + (r.reason || "未知错误"), "error");
     refreshAuthPanel();
-    setCloudTip("已清除云同步配置。");
+    renderSettings();
     onChanged && onChanged();
   });
+
+  async function ensureClient() {
+    try {
+      const r = await initCloud();
+      return r.ok;
+    } catch (e) {
+      return false;
+    }
+  }
 
   $("btn-sign-in").addEventListener("click", async () => {
     const email = $("auth-email").value.trim();
@@ -269,6 +300,7 @@ export function bindSettings(onChanged, onBookChanged) {
     if (!email || !pwd) { setCloudTip("请输入邮箱和密码。", "error"); return; }
     setCloudTip("登录中…");
     try {
+      await ensureClient();
       await signIn(email, pwd);
       setCloudTip("✓ 登录成功，正在合并云端数据…");
       await pullAndMerge();
@@ -288,13 +320,14 @@ export function bindSettings(onChanged, onBookChanged) {
     if (pwd.length < 6) { setCloudTip("密码至少 6 位。", "error"); return; }
     setCloudTip("注册中…");
     try {
+      await ensureClient();
       const data = await signUp(email, pwd);
       if (data?.session) {
         setCloudTip("✓ 注册成功并自动登录，正在同步…");
         await pullAndMerge();
         await push();
       } else {
-        setCloudTip("注册邮件已发送，请前往邮箱确认后再登录（若项目开启了邮箱验证）。");
+        setCloudTip("注册邮件已发送，请前往邮箱确认后再登录。");
       }
       refreshAuthPanel();
       onChanged && onChanged();
