@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>六级单词 · Daily</title>
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">六</span>
+      <div>
+        <h1>六级单词 · Daily</h1>
+        <p class="sub" id="sub-line">Day 1 · 连续 0 天</p>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button class="tab active" data-view="learn">今日学习</button>
+      <button class="tab" data-view="story">今日短文</button>
+      <button class="tab" data-view="review">复习</button>
+      <button class="tab" data-view="stats">统计</button>
+      <button class="tab" data-view="settings">设置</button>
+    </nav>
+  </header>
+
+  <main id="app">
+    <!-- 今日学习 -->
+    <section class="view" data-view="learn">
+      <div class="learn-wrap" id="learn-wrap">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progress-fill"></div>
+          <span class="progress-text" id="progress-text">0 / 0</span>
+        </div>
+
+        <div class="card" id="card">
+          <div class="card-front" id="card-front">
+            <div class="word" id="word-text">—</div>
+            <div class="phonetic" id="word-phonetic"></div>
+            <button class="reveal-btn" id="reveal-btn">显示释义</button>
+            <p class="hint">点击卡片或按空格键显示释义</p>
+          </div>
+          <div class="card-back hidden" id="card-back">
+            <div class="word" id="back-word"></div>
+            <div class="phonetic" id="back-phonetic"></div>
+            <div class="pos" id="back-pos"></div>
+            <div class="meaning" id="back-meaning"></div>
+            <div class="example" id="back-example"></div>
+            <div class="example-zh" id="back-example-zh"></div>
+            <div class="rate-row">
+              <button class="rate rate-hard" data-rate="0">不认识</button>
+              <button class="rate rate-mid" data-rate="1">模糊</button>
+              <button class="rate rate-easy" data-rate="2">认识</button>
+            </div>
+            <p class="hint">按 1 / 2 / 3 快速评分</p>
+          </div>
+        </div>
+
+        <div class="done-panel hidden" id="done-panel">
+          <h2>今日单词已学完 🎉</h2>
+          <p id="done-summary"></p>
+          <button class="primary" id="go-story">生成今日短文 →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 今日短文 -->
+    <section class="view hidden" data-view="story">
+      <div class="story-wrap">
+        <div class="story-header">
+          <h2>今日短文</h2>
+          <div class="story-actions">
+            <button class="ghost" id="btn-story-fallback">使用内置短文</button>
+            <button class="primary" id="btn-story-ai">用 AI 生成</button>
+          </div>
+        </div>
+        <div class="story-body" id="story-body">
+          <p class="placeholder">学完今日单词后，这里会生成一段串联所有生词的英文短文及翻译。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 复习 -->
+    <section class="view hidden" data-view="review">
+      <div class="review-wrap" id="review-wrap">
+        <h2>复习队列</h2>
+        <p id="review-summary" class="muted">基于艾宾浩斯曲线，第 1、2、4、7、15 天复习。</p>
+        <div id="review-card-host"></div>
+      </div>
+    </section>
+
+    <!-- 统计 -->
+    <section class="view hidden" data-view="stats">
+      <div class="stats-wrap">
+        <h2>学习统计</h2>
+        <div class="stat-grid" id="stat-grid"></div>
+        <h3>最近 14 天打卡</h3>
+        <div class="heat" id="heat"></div>
+        <h3>已掌握的词（最近 50）</h3>
+        <div class="known-list" id="known-list"></div>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section class="view hidden" data-view="settings">
+      <div class="settings-wrap">
+        <h2>设置</h2>
+
+        <div class="field">
+          <label>每日学习单词数</label>
+          <input type="number" id="set-daily" min="5" max="200" step="5" />
+          <p class="hint">默认 50，范围 5 ~ 200</p>
+        </div>
+
+        <h3>AI 短文（C 方案）</h3>
+        <div class="field">
+          <label>API 服务商</label>
+          <select id="set-provider">
+            <option value="openai">OpenAI</option>
+            <option value="deepseek">DeepSeek</option>
+            <option value="dashscope">通义千问 (DashScope 兼容模式)</option>
+            <option value="custom">自定义（OpenAI 兼容）</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>API Base URL</label>
+          <input type="text" id="set-base" placeholder="https://api.openai.com/v1" />
+        </div>
+        <div class="field">
+          <label>API Key</label>
+          <input type="password" id="set-key" placeholder="sk-..." />
+          <p class="hint">仅保存在你自己的浏览器 LocalStorage，不会上传。</p>
+        </div>
+        <div class="field">
+          <label>模型</label>
+          <input type="text" id="set-model" placeholder="gpt-4o-mini" />
+        </div>
+
+        <div class="actions">
+          <button class="primary" id="btn-save">保存设置</button>
+          <button class="ghost" id="btn-reset-today">重置今日学习</button>
+          <button class="danger" id="btn-clear-all">清除所有数据</button>
+        </div>
+
+        <p class="save-tip" id="save-tip"></p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <span>六级单词 · Daily</span>
+    <span class="dot">·</span>
+    <span>数据仅保存在你的浏览器</span>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
