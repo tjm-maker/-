@@ -1,6 +1,7 @@
 // 短文生成：C 方案（AI API，OpenAI 兼容）+ A 方案兜底
 import { Storage, todayStr } from "./storage.js";
 import { getTodayWords } from "./session.js";
+import { schedulePush } from "./cloud.js";
 
 const PROVIDER_DEFAULTS = {
   openai:    { baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" },
@@ -152,6 +153,7 @@ export function saveTodayStory(story) {
   Storage.update(s => {
     if (s.sessions[today]) s.sessions[today].story = story;
   });
+  schedulePush();
 }
 
 export async function generateStory({ mode = "ai" } = {}) {

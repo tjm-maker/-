@@ -1,6 +1,7 @@
 // 复习视图：到期单词逐个过卡
 import { Storage, todayStr, scheduleNext } from "../core/storage.js";
 import { WORDS } from "../data/words.js";
+import { schedulePush } from "../core/cloud.js";
 
 function $(id) { return document.getElementById(id); }
 
@@ -86,6 +87,7 @@ function render() {
       cursor += 1;
       revealed = false;
       render();
+      schedulePush();
       window.dispatchEvent(new CustomEvent("cet6:progress"));
     });
   });
