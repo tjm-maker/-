@@ -2,22 +2,43 @@
 import { Storage, todayStr } from "./storage.js";
 import { WORDS } from "../data/words.js";
 import { schedulePush } from "./cloud.js";
+import { loadBookWords, getCurrentBookId } from "./books.js";
+
+// 当前词书在内存中的缓存（避免每次都异步加载）
+let currentBookId = null;
+let currentBookWords = WORDS; // 默认精华版，保证启动时有东西可用
+
+export function getCurrentBookWords() {
+  return currentBookWords;
+}
+
+// 应用启动 / 切换词书时调用，把词书加载到内存
+export async function loadBookIntoCache(bookId = getCurrentBookId()) {
+  currentBookId = bookId;
+  try {
+    currentBookWords = await loadBookWords(bookId);
+  } catch (e) {
+    console.error("loadBook failed, fallback to essentials", e);
+    currentBookWords = WORDS;
+  }
+  return currentBookWords;
+}
 
 // 从词库中挑选今日单词（优先没学过的；不足则从 box 低的里补）
 function pickTodayWords(count) {
   const state = Storage.get();
+  const pool = currentBookWords;
   const seen = new Set(Object.keys(state.progress));
-  const fresh = WORDS.filter(w => !seen.has(w.w));
-  // shuffle
+  const fresh = pool.filter(w => !seen.has(w.w));
   shuffle(fresh);
   let picked = fresh.slice(0, count);
   if (picked.length < count) {
-    // 把已学但最弱的（box 低）补上
+    // 用已学但最弱的补齐（从当前词书里找得到的）
     const weak = Object.values(state.progress)
       .sort((a, b) => (a.box ?? 0) - (b.box ?? 0))
-      .slice(0, count - picked.length)
-      .map(p => WORDS.find(w => w.w === p.w))
-      .filter(Boolean);
+      .map(p => pool.find(w => w.w === p.w))
+      .filter(Boolean)
+      .slice(0, count - picked.length);
     picked = picked.concat(weak);
   }
   return picked;
@@ -43,6 +64,7 @@ export function ensureTodaySession() {
       idx: 0,
       rated: [],
       story: null,
+      bookId: currentBookId || getCurrentBookId(),
     };
   }).sessions[today];
 }
@@ -59,13 +81,11 @@ export function rateCurrent(rate) {
     const word = sess.pool[sess.idx];
     if (!word) return;
     sess.rated.push({ w: word.w, rate });
-    // 写入 progress
     const cur = s.progress[word.w] || { w: word.w, firstSeen: today, box: 0 };
     applySchedule(cur, rate);
     s.progress[word.w] = cur;
     if (!s.learnOrder.includes(word.w)) s.learnOrder.push(word.w);
     sess.idx += 1;
-    // 打卡
     if (sess.idx === sess.pool.length) {
       if (!s.checkIns.includes(today)) s.checkIns.push(today);
       s.checkIns.sort();
@@ -102,7 +122,6 @@ function computeStreak(checkIns) {
     d.setDate(d.getDate() - 1);
     return todayStr(d);
   })();
-  // 只在今天或昨天打过卡才算连续
   const last = checkIns[checkIns.length - 1];
   if (last !== today && last !== yest) return 0;
   let streak = 0;

@@ -24,6 +24,10 @@ const defaultState = () => ({
   checkIns: [],
   // 总已见单词顺序（按首次学习时间）
   learnOrder: [],
+  // 当前使用的词书 id
+  currentBook: "cet6-essentials",
+  // 用户自定义词书： [{id, name, words: [...]}]
+  customBooks: [],
 });
 
 export const Storage = {

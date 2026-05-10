@@ -114,8 +114,32 @@
         <div class="field">
           <label>每日学习单词数</label>
           <input type="number" id="set-daily" min="5" max="200" step="5" />
-          <p class="hint">默认 50，范围 5 ~ 200</p>
+          <p class="hint">默认 50，范围 5 ~ 200（明天或重置今日学习后生效）</p>
         </div>
+
+        <h3>📚 单词书</h3>
+        <p class="muted" style="margin-top:-6px;">选择一本词书作为抽词来源。切换后当天的学习列表会重新抽取。</p>
+        <div class="field">
+          <label>当前使用</label>
+          <select id="set-book"></select>
+          <p class="hint" id="book-desc"></p>
+        </div>
+        <div class="actions" style="margin-top:6px;">
+          <label class="ghost" style="display:inline-flex;align-items:center;cursor:pointer;">
+            导入词书文件
+            <input type="file" id="book-import" accept=".txt,.json" style="display:none;" />
+          </label>
+          <button class="ghost" id="btn-book-delete">删除当前自定义词书</button>
+        </div>
+        <p class="save-tip" id="book-tip"></p>
+        <details style="margin-top:10px;">
+          <summary class="muted" style="cursor:pointer;font-size:13px;">支持的文件格式 ▾</summary>
+          <div class="muted" style="font-size:13px;line-height:1.7;margin-top:8px;">
+            <div><strong>TXT</strong>：每行 <code>单词&lt;tab&gt;释义</code>，例如：<br>
+            <code>abandon&nbsp;&nbsp;v. 抛弃，放弃</code></div>
+            <div style="margin-top:6px;"><strong>JSON</strong>：数组格式 <code>[&#123;"w":"abandon","t":"v.","m":"抛弃，放弃","p":"/əˈbændən/","e":"示例","ez":"示例翻译"&#125;]</code></div>
+          </div>
+        </details>
 
         <h3>🔊 朗读单词</h3>
         <div class="field">
@@ -158,12 +182,11 @@
         </div>
 
         <div class="actions">
-          <button class="primary" id="btn-save">保存设置</button>
           <button class="ghost" id="btn-reset-today">重置今日学习</button>
           <button class="danger" id="btn-clear-all">清除所有数据</button>
         </div>
 
-        <p class="save-tip" id="save-tip"></p>
+        <p class="save-tip" id="save-tip">所有更改自动保存到本地浏览器。</p>
 
         <hr class="sep" />
         <h3>☁️ 云同步（Supabase）</h3>

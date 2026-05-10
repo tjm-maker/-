@@ -1,6 +1,7 @@
 // 应用主入口
 import { Storage, todayStr } from "./core/storage.js";
-import { ensureTodaySession } from "./core/session.js";
+import { ensureTodaySession, loadBookIntoCache } from "./core/session.js";
+import { getCurrentBookId } from "./core/books.js";
 import { renderLearn, bindLearn } from "./views/learn.js";
 import { renderStory, bindStory } from "./views/story.js";
 import { renderReview, bindReview } from "./views/review.js";
@@ -63,6 +64,9 @@ function setChipState(state, msg) {
 
 async function init() {
   Storage.load();
+
+  // 先加载当前词书到内存，再建今日会话
+  await loadBookIntoCache(getCurrentBookId());
   ensureTodaySession();
 
   document.querySelectorAll(".tab").forEach(t => {
@@ -74,18 +78,22 @@ async function init() {
   bindLearn(() => switchView("story"));
   bindStory();
   bindReview();
-  bindSettings(() => {
-    ensureTodaySession();
-    renderLearn();
-    renderTopBar();
-  });
+  bindSettings(
+    () => { renderLearn(); renderTopBar(); },
+    // 切换词书回调：重新加载词书并刷新学习页
+    async (bookId) => {
+      await loadBookIntoCache(bookId);
+      ensureTodaySession();
+      renderLearn();
+      renderTopBar();
+    }
+  );
 
   window.addEventListener("cet6:progress", renderTopBar);
 
   // 云同步事件：更新顶栏 chip
   onCloudChange(async (evt) => {
     if (evt.type === "auth" && evt.user) {
-      // 登录了，主动拉一次
       setChipState("syncing", "同步中…");
       await pullAndMerge();
       ensureTodaySession();
@@ -93,14 +101,8 @@ async function init() {
       renderTopBar();
       return;
     }
-    if (evt.type === "pushed") {
-      setChipState("ok");
-      return;
-    }
-    if (evt.type === "pushError") {
-      setChipState("error", "同步失败");
-      return;
-    }
+    if (evt.type === "pushed") { setChipState("ok"); return; }
+    if (evt.type === "pushError") { setChipState("error", "同步失败"); return; }
     renderTopBar();
   });
 
@@ -113,6 +115,8 @@ async function init() {
     if (r.ok && r.user) {
       setChipState("syncing", "同步中…");
       await pullAndMerge();
+      // 合并后当前词书可能变了，重新加载
+      await loadBookIntoCache(getCurrentBookId());
       ensureTodaySession();
       renderLearn();
       renderTopBar();
