@@ -20,6 +20,7 @@
       <button class="tab" data-view="story">今日短文</button>
       <button class="tab" data-view="review">复习</button>
       <button class="tab" data-view="stats">统计</button>
+      <button class="tab" data-view="vocab">词表</button>
       <button class="tab" data-view="settings">设置</button>
     </nav>
     <div class="cloud-chip" id="cloud-chip" title="点击前往设置">
@@ -104,6 +105,21 @@
         <div class="heat" id="heat"></div>
         <h3>已掌握的词（最近 50）</h3>
         <div class="known-list" id="known-list"></div>
+      </div>
+    </section>
+
+    <!-- 词表 -->
+    <section class="view hidden" data-view="vocab">
+      <div class="vocab-wrap">
+        <h2>词表</h2>
+        <div class="vocab-tabs">
+          <button class="vocab-tab active" id="vocab-tab-learned">已背 <span id="vocab-learned-count">0</span></button>
+          <button class="vocab-tab" id="vocab-tab-unlearned">未背 <span id="vocab-unlearned-count">0</span></button>
+        </div>
+        <div class="vocab-search">
+          <input type="text" id="vocab-search" placeholder="搜索单词…" />
+        </div>
+        <div id="vocab-list" class="vocab-list"></div>
       </div>
     </section>
 

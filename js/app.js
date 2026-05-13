@@ -6,6 +6,7 @@ import { renderLearn, bindLearn } from "./views/learn.js";
 import { renderStory, bindStory } from "./views/story.js";
 import { renderReview, bindReview } from "./views/review.js";
 import { renderStats } from "./views/stats.js";
+import { renderVocab, bindVocab } from "./views/vocab.js";
 import { renderSettings, bindSettings } from "./views/settings.js";
 import {
   initCloud, pullAndMerge, onCloudChange,
@@ -25,6 +26,7 @@ function switchView(name) {
   if (name === "story")    renderStory();
   if (name === "review")   renderReview();
   if (name === "stats")    renderStats();
+  if (name === "vocab")    renderVocab();
   if (name === "settings") renderSettings();
 }
 
@@ -78,6 +80,7 @@ async function init() {
   bindLearn(() => switchView("story"));
   bindStory();
   bindReview();
+  bindVocab();
   bindSettings(
     () => { renderLearn(); renderTopBar(); },
     // 切换词书回调：重新加载词书并刷新学习页
