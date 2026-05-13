@@ -73,11 +73,14 @@
     <section class="view hidden" data-view="story">
       <div class="story-wrap">
         <div class="story-header">
-          <h2>今日短文</h2>
-          <div class="story-actions">
-            <button class="ghost" id="btn-story-fallback">使用内置短文</button>
-            <button class="primary" id="btn-story-ai">用 AI 生成</button>
+          <h2>短文</h2>
+          <div class="story-date-row">
+            <select id="story-date-sel" class="rv-date-sel"></select>
           </div>
+        </div>
+        <div id="story-actions-wrap" class="story-actions" style="margin-bottom:14px;">
+          <button class="ghost" id="btn-story-fallback">使用内置短文</button>
+          <button class="primary" id="btn-story-ai">用 AI 生成</button>
         </div>
         <div class="story-body" id="story-body">
           <p class="placeholder">学完今日单词后，这里会生成一段串联所有生词的英文短文及翻译。</p>
@@ -88,9 +91,7 @@
     <!-- 复习 -->
     <section class="view hidden" data-view="review">
       <div class="review-wrap" id="review-wrap">
-        <h2>复习队列</h2>
-        <p id="review-summary" class="muted">基于艾宾浩斯曲线，第 1、2、4、7、15 天复习。</p>
-        <div id="review-card-host"></div>
+        <!-- review.js 会动态渲染全部内容 -->
       </div>
     </section>
 

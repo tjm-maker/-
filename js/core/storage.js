@@ -28,6 +28,10 @@ const defaultState = () => ({
   currentBook: "cet6-essentials",
   // 用户自定义词书： [{id, name, words: [...]}]
   customBooks: [],
+  // 每日错词：{ "2026-05-13": [{w, rate}], ... }
+  dailyMistakes: {},
+  // 强制复现队列：{ "word": { startDate, streak, dates:[5个待出现日期] } }
+  forceRepeat: {},
 });
 
 export const Storage = {

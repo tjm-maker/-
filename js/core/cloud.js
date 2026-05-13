@@ -117,7 +117,7 @@ export async function signOut() {
 // ============ 数据读写 ============
 
 // 要同步的字段（把 AI 相关的本地密钥排除在外）
-const SYNC_KEYS = ["progress", "sessions", "checkIns", "learnOrder", "streak", "lastDate", "currentBook", "customBooks"];
+const SYNC_KEYS = ["progress", "sessions", "checkIns", "learnOrder", "streak", "lastDate", "currentBook", "customBooks", "dailyMistakes", "forceRepeat"];
 const SYNC_SETTINGS = ["dailyCount", "ttsEnabled", "ttsRate"];
 
 function extractSyncPayload(state) {
@@ -202,6 +202,39 @@ function applyRemote(state, remote) {
     (state.customBooks || []).forEach(b => byId.set(b.id, b));
     remote.customBooks.forEach(b => byId.set(b.id, b));
     state.customBooks = Array.from(byId.values());
+  }
+
+  // dailyMistakes: 按日期合并（每天取并集）
+  if (remote.dailyMistakes && typeof remote.dailyMistakes === "object") {
+    state.dailyMistakes = state.dailyMistakes || {};
+    for (const [date, arr] of Object.entries(remote.dailyMistakes)) {
+      if (!state.dailyMistakes[date]) {
+        state.dailyMistakes[date] = arr;
+      } else {
+        const existing = new Set(state.dailyMistakes[date].map(x => x.w));
+        for (const item of arr) {
+          if (!existing.has(item.w)) state.dailyMistakes[date].push(item);
+        }
+      }
+    }
+  }
+
+  // forceRepeat: 按单词合并（取 streak 更高的；都为 0 时取日期更新的）
+  if (remote.forceRepeat && typeof remote.forceRepeat === "object") {
+    state.forceRepeat = state.forceRepeat || {};
+    for (const [word, rInfo] of Object.entries(remote.forceRepeat)) {
+      const lInfo = state.forceRepeat[word];
+      if (!lInfo) {
+        state.forceRepeat[word] = rInfo;
+      } else {
+        // 取 streak 更高的版本
+        if ((rInfo.streak || 0) > (lInfo.streak || 0)) {
+          state.forceRepeat[word] = rInfo;
+        } else if ((rInfo.streak || 0) === (lInfo.streak || 0) && rInfo.startDate > lInfo.startDate) {
+          state.forceRepeat[word] = rInfo;
+        }
+      }
+    }
   }
 
   return state;
