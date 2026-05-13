@@ -188,4 +188,12 @@ export function bindVocab() {
     const detail = item.querySelector(`[data-detail="${word}"]`);
     if (detail) detail.classList.toggle("hidden");
   });
+
+  // 显示/隐藏全部释义
+  $("vocab-show-all").addEventListener("click", () => {
+    const details = document.querySelectorAll("#vocab-list .rv-word-detail");
+    const allVisible = [...details].every(d => !d.classList.contains("hidden"));
+    details.forEach(d => d.classList.toggle("hidden", allVisible));
+    $("vocab-show-all").textContent = allVisible ? "显示全部释义" : "隐藏全部释义";
+  });
 }
