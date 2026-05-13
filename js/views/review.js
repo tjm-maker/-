@@ -3,6 +3,7 @@ import { Storage, todayStr, scheduleNext } from "../core/storage.js";
 import { WORDS } from "../data/words.js";
 import { schedulePush } from "../core/cloud.js";
 import { speak, stop as stopTTS } from "../core/tts.js";
+import { queryWordAI, mdToHtml } from "../core/wordai.js";
 import { getCurrentBookWords, getMistakesByDate, getMistakeDates, rateReviewWord } from "../core/session.js";
 
 function $(id) { return document.getElementById(id); }
@@ -233,8 +234,12 @@ function renderDrillCard() {
           <button class="rate rate-mid" data-rate="1">模糊</button>
           <button class="rate rate-easy" data-rate="2">认识</button>
         </div>
+        <div class="ask-ai-row">
+          <button class="ask-ai-btn" id="rv-ask-ai">问 AI</button>
+        </div>
       </div>
     </div>
+    <div id="rv-ai-result" class="ai-word-result hidden"></div>
   `;
 
   // 绑定事件
@@ -252,7 +257,7 @@ function renderDrillCard() {
   };
 
   card.addEventListener("click", (e) => {
-    if (e.target.closest(".rate") || e.target.closest(".reveal-btn") || e.target.closest(".tts-btn")) return;
+    if (e.target.closest(".rate") || e.target.closest(".reveal-btn") || e.target.closest(".tts-btn") || e.target.closest(".ask-ai-btn")) return;
     reveal();
   });
   revealBtn.addEventListener("click", reveal);
@@ -265,6 +270,24 @@ function renderDrillCard() {
     area.innerHTML = "";
     renderReview();
   });
+
+  // 问 AI
+  const askAiBtn = $("rv-ask-ai");
+  if (askAiBtn) {
+    askAiBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const aiArea = $("rv-ai-result");
+      if (!aiArea) return;
+      aiArea.classList.remove("hidden");
+      aiArea.innerHTML = `<div class="story-loading"><span class="spin"></span><span>AI 正在分析「${d.w}」…</span></div>`;
+      try {
+        const md = await queryWordAI(d.w);
+        aiArea.innerHTML = `<div class="ai-result-content">${mdToHtml(md)}</div>`;
+      } catch (err) {
+        aiArea.innerHTML = `<div style="color:var(--danger);padding:8px 0;"><strong>查询失败：</strong>${err.message || err}<br><span class="muted">请检查设置中的 AI API Key。</span></div>`;
+      }
+    });
+  }
 
   area.querySelectorAll(".rate").forEach(btn => {
     btn.addEventListener("click", () => {
