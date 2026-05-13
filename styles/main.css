@@ -690,3 +690,66 @@ input[type="range"] {
   background: rgba(77, 227, 193, 0.2);
   color: var(--ok);
 }
+
+
+
+/* ===== Ask AI Word ===== */
+.ask-ai-row {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+.ask-ai-btn {
+  padding: 8px 18px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.ask-ai-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
+.ai-word-result {
+  margin-top: 16px;
+  padding: 16px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.7;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.ai-section-title {
+  color: var(--accent-2);
+  font-size: 15px;
+  font-weight: 700;
+  margin: 14px 0 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+.ai-section-title:first-child { margin-top: 0; }
+
+.ai-subsection {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 10px 0 4px;
+}
+
+.ai-list-item {
+  padding: 2px 0 2px 8px;
+  color: var(--text);
+}
+
+.ai-result-content strong {
+  color: var(--accent-2);
+}
