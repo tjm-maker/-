@@ -510,3 +510,100 @@ input[type="range"] {
   width: 100%;
   accent-color: var(--accent);
 }
+
+
+
+/* ===== Review Rework ===== */
+.rv-header { margin-bottom: 16px; }
+.rv-header h2 { margin: 0; }
+
+.rv-date-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.rv-date-sel {
+  padding: 6px 10px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 8px;
+  font-size: 13px;
+  outline: none;
+  min-width: 160px;
+}
+.rv-date-sel:focus { border-color: var(--accent); }
+
+.rv-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+.rv-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.rv-section-header h3 { margin: 0; }
+.rv-section-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.rv-word-item {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.rv-word-item:hover { background: var(--bg-elev); }
+.rv-word-item:last-child { border-bottom: none; }
+
+.rv-word-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.rv-word-text {
+  font-size: 16px;
+  font-weight: 600;
+}
+.rv-tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.rv-tag-hard { background: rgba(255, 107, 129, 0.2); color: var(--danger); }
+.rv-tag-mid { background: rgba(255, 184, 77, 0.2); color: var(--warn); }
+
+.rv-word-detail {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--bg-elev);
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.rv-pos { color: var(--accent-2); margin-right: 6px; font-size: 13px; }
+.rv-meaning { color: var(--text); }
+.rv-example { color: var(--text-mute); font-style: italic; margin-top: 4px; font-size: 13px; }
+.rv-example-zh { color: var(--text-mute); font-size: 12px; }
+
+.rv-drill-progress { font-size: 13px; }
+
+.story-date-row {
+  display: flex;
+  align-items: center;
+}
+.story-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
