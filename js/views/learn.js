@@ -1,6 +1,7 @@
 // 今日学习视图
 import { getTodaySession, rateCurrent } from "../core/session.js";
 import { speak, stop as stopTTS } from "../core/tts.js";
+import { queryWordAI, mdToHtml } from "../core/wordai.js";
 
 let revealed = false;
 
@@ -54,6 +55,13 @@ export function renderLearn() {
   $("back-meaning").textContent = word.m || "";
   $("back-example").textContent = word.e ? `"${word.e}"` : "";
   $("back-example-zh").textContent = word.ez || "";
+
+  // 重置 AI 区域
+  const aiArea = $("ai-word-result");
+  if (aiArea) {
+    aiArea.innerHTML = "";
+    aiArea.classList.add("hidden");
+  }
 }
 
 function reveal() {
@@ -68,30 +76,49 @@ function reveal() {
 
 function onRate(rate) {
   if (!revealed) {
-    // 没显示释义就评分，默认显示一下
     reveal();
     return;
   }
   stopTTS();
   rateCurrent(rate);
   renderLearn();
-  // 触发外部回调（更新顶栏、统计）
   window.dispatchEvent(new CustomEvent("cet6:progress"));
+}
+
+async function askAI() {
+  const word = currentWord();
+  if (!word) return;
+  const aiArea = $("ai-word-result");
+  if (!aiArea) return;
+  aiArea.classList.remove("hidden");
+  aiArea.innerHTML = `<div class="story-loading"><span class="spin"></span><span>AI 正在分析「${word.w}」…</span></div>`;
+
+  try {
+    const md = await queryWordAI(word.w);
+    aiArea.innerHTML = `<div class="ai-result-content">${mdToHtml(md)}</div>`;
+  } catch (e) {
+    aiArea.innerHTML = `<div style="color:var(--danger);padding:8px 0;"><strong>查询失败：</strong>${e.message || e}<br><span class="muted">请检查设置中的 AI API Key。</span></div>`;
+  }
 }
 
 export function bindLearn(onDone) {
   $("card").addEventListener("click", (e) => {
-    // 避免点 rate/reveal/tts 按钮时触发翻面
-    if (e.target.closest(".rate") || e.target.closest(".reveal-btn") || e.target.closest(".tts-btn")) return;
+    if (e.target.closest(".rate") || e.target.closest(".reveal-btn") || e.target.closest(".tts-btn") || e.target.closest(".ask-ai-btn")) return;
     reveal();
   });
   $("reveal-btn").addEventListener("click", reveal);
 
-  // 手动朗读按钮（忽略全局开关，强制朗读）
+  // 手动朗读按钮
   $("back-tts").addEventListener("click", (e) => {
     e.stopPropagation();
     const word = currentWord();
     if (word) speak(word.w, { respectSetting: false });
+  });
+
+  // 问 AI 按钮
+  $("btn-ask-ai").addEventListener("click", (e) => {
+    e.stopPropagation();
+    askAI();
   });
 
   document.querySelectorAll(".rate").forEach(btn => {
@@ -111,10 +138,8 @@ export function bindLearn(onDone) {
       e.preventDefault();
       reveal();
     } else if (["1", "2", "3"].includes(e.key)) {
-      // 1=不认识 2=模糊 3=认识
       onRate(parseInt(e.key, 10) - 1);
     } else if (e.key.toLowerCase() === "p") {
-      // P 键再读一次
       const word = currentWord();
       if (revealed && word) speak(word.w, { respectSetting: false });
     }
